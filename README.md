@@ -27,8 +27,13 @@ Tasten-Übersicht unten rechts im Bild.
 3. **Extensions (Steckersymbol) → Multi-Mode Dictation** öffnen.
 
 ### Variante B – per Git-URL
-Repo auf GitHub legen und in ST über **Install Extension** per URL ziehen
-(manifest.json liegt im Repo-Root).
+In ST über **Install Extension** diese URL eintragen (sobald das Repo öffentlich ist):
+
+```
+https://github.com/mccrypt1/SillyTavern-Multi-Mode-Dictation
+```
+
+(manifest.json liegt im Repo-Root.)
 
 ## Bedienmodi
 
