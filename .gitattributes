@@ -1,0 +1,6 @@
+# Einheitliche Zeilenenden im Repo (LF), damit Diffs sauber bleiben
+* text=auto eol=lf
+*.bat text eol=crlf
+*.png binary
+*.jpg binary
+*.zip binary

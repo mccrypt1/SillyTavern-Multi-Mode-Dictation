@@ -1,37 +1,224 @@
 /*
  * Multi-Mode Dictation für SillyTavern
  * ------------------------------------
- * Vier Hotkeys, die das vorhandene Whisper-STT von SillyTavern nutzen,
- * das Transkript formatieren (Asterisks / Quotes) und in einem Puffer
- * sammeln, bis eine "Senden"-Taste gedrückt wird.
+ * Spracheingabe über das lokale Whisper-STT, formatiert das Transkript
+ * (Asterisks / Quotes) und sammelt die Teile in einem Puffer, bis eine
+ * "Senden"-Aktion ausgelöst wird.
  *
- * Standardbelegung:
- *   Numpad0 = Asterisk-Modus,  an Puffer anhängen (warten)
- *   Numpad1 = Asterisk-Modus,  an Puffer anhängen + senden
- *   Numpad2 = Quote-Modus,     an Puffer anhängen (warten)
- *   Numpad3 = Quote-Modus,     an Puffer anhängen + senden
+ * Modi:
+ *   4-Knopf (Standard): Asterisk/Quote × Puffer/Senden  (Numpad0–3)
+ *   3-Knopf:            Quote+Puffer, Asterisk+Puffer, Senden  (Numpad0–2)
  *
- * Trenner zwischen Puffer-Teilen: "..."  (konfigurierbar)
+ * made by FragThief_1337
  */
 
 const MODULE_NAME = 'multi_dictation';
+const CREDITS = 'made by FragThief_1337';
 
 const context = SillyTavern.getContext();
-const { extensionSettings, saveSettingsDebounced, eventSource, event_types } = context;
+const { extensionSettings, saveSettingsDebounced } = context;
+
+// ---------- Übersetzungen (UI-Sprache) ----------
+const LANG_NAMES = {
+    de: 'Deutsch',
+    en: 'English',
+    fr: 'Français',
+    es: 'Español',
+    ru: 'Русский',
+    ja: '日本語',
+    zh: '中文',
+};
+
+const I18N = {
+    de: {
+        enabled: 'Aktiviert',
+        uiLang: 'Menüsprache',
+        sttHint: 'Nutzt den lokalen Whisper-STT-Server. Aufnahme starten/stoppen = gleiche Taste drücken.',
+        mode: 'Bedienmodus',
+        mode4: '4-Knopf (Asterisk/Quote × Puffer/Senden)',
+        mode3: '3-Knopf (Quote, Asterisk, Senden)',
+        k_asteriskHold: 'Asterisk – anhängen (warten)',
+        k_asteriskSend: 'Asterisk – anhängen + senden',
+        k_quoteHold: 'Quote – anhängen (warten)',
+        k_quoteSend: 'Quote – anhängen + senden',
+        k_send: 'Senden (Puffer abschicken)',
+        separator: 'Trenner zwischen Teilen',
+        whisperUrl: 'Whisper-URL (leer = automatisch)',
+        clearBuffer: 'Puffer leeren',
+        sendBuffer: 'Puffer jetzt senden',
+        showLegend: 'Tasten-Übersicht anzeigen',
+        bufferEmpty: 'Puffer: leer',
+        bufferLabel: 'Puffer',
+        t_recording: 'Aufnahme läuft (%s)… Taste erneut drücken zum Stoppen',
+        t_transcribing: 'Transkribiere…',
+        t_micError: 'Mikrofon nicht verfügbar',
+        t_failed: 'Transkription fehlgeschlagen – läuft der STT-Server?',
+    },
+    en: {
+        enabled: 'Enabled',
+        uiLang: 'Menu language',
+        sttHint: 'Uses the local Whisper STT server. Start/stop recording = press the same key.',
+        mode: 'Control mode',
+        mode4: '4-key (Asterisk/Quote × Buffer/Send)',
+        mode3: '3-key (Quote, Asterisk, Send)',
+        k_asteriskHold: 'Asterisk – append (wait)',
+        k_asteriskSend: 'Asterisk – append + send',
+        k_quoteHold: 'Quote – append (wait)',
+        k_quoteSend: 'Quote – append + send',
+        k_send: 'Send (flush buffer)',
+        separator: 'Separator between parts',
+        whisperUrl: 'Whisper URL (empty = automatic)',
+        clearBuffer: 'Clear buffer',
+        sendBuffer: 'Send buffer now',
+        showLegend: 'Show key overview',
+        bufferEmpty: 'Buffer: empty',
+        bufferLabel: 'Buffer',
+        t_recording: 'Recording (%s)… press the key again to stop',
+        t_transcribing: 'Transcribing…',
+        t_micError: 'Microphone unavailable',
+        t_failed: 'Transcription failed – is the STT server running?',
+    },
+    fr: {
+        enabled: 'Activé',
+        uiLang: 'Langue du menu',
+        sttHint: 'Utilise le serveur STT Whisper local. Démarrer/arrêter l’enregistrement = appuyer sur la même touche.',
+        mode: 'Mode de commande',
+        mode4: '4 touches (Astérisque/Guillemets × Tampon/Envoi)',
+        mode3: '3 touches (Guillemets, Astérisque, Envoi)',
+        k_asteriskHold: 'Astérisque – ajouter (attendre)',
+        k_asteriskSend: 'Astérisque – ajouter + envoyer',
+        k_quoteHold: 'Guillemets – ajouter (attendre)',
+        k_quoteSend: 'Guillemets – ajouter + envoyer',
+        k_send: 'Envoyer (vider le tampon)',
+        separator: 'Séparateur entre les parties',
+        whisperUrl: 'URL Whisper (vide = automatique)',
+        clearBuffer: 'Vider le tampon',
+        sendBuffer: 'Envoyer le tampon',
+        showLegend: 'Afficher l’aperçu des touches',
+        bufferEmpty: 'Tampon : vide',
+        bufferLabel: 'Tampon',
+        t_recording: 'Enregistrement (%s)… appuyez à nouveau pour arrêter',
+        t_transcribing: 'Transcription…',
+        t_micError: 'Microphone indisponible',
+        t_failed: 'Échec de la transcription – le serveur STT est-il lancé ?',
+    },
+    es: {
+        enabled: 'Activado',
+        uiLang: 'Idioma del menú',
+        sttHint: 'Usa el servidor STT Whisper local. Iniciar/detener grabación = pulsa la misma tecla.',
+        mode: 'Modo de control',
+        mode4: '4 teclas (Asterisco/Comillas × Búfer/Enviar)',
+        mode3: '3 teclas (Comillas, Asterisco, Enviar)',
+        k_asteriskHold: 'Asterisco – añadir (esperar)',
+        k_asteriskSend: 'Asterisco – añadir + enviar',
+        k_quoteHold: 'Comillas – añadir (esperar)',
+        k_quoteSend: 'Comillas – añadir + enviar',
+        k_send: 'Enviar (vaciar búfer)',
+        separator: 'Separador entre partes',
+        whisperUrl: 'URL de Whisper (vacío = automático)',
+        clearBuffer: 'Vaciar búfer',
+        sendBuffer: 'Enviar búfer ahora',
+        showLegend: 'Mostrar resumen de teclas',
+        bufferEmpty: 'Búfer: vacío',
+        bufferLabel: 'Búfer',
+        t_recording: 'Grabando (%s)… pulsa la tecla de nuevo para detener',
+        t_transcribing: 'Transcribiendo…',
+        t_micError: 'Micrófono no disponible',
+        t_failed: 'Transcripción fallida: ¿está el servidor STT en marcha?',
+    },
+    ru: {
+        enabled: 'Включено',
+        uiLang: 'Язык меню',
+        sttHint: 'Использует локальный STT-сервер Whisper. Старт/стоп записи = нажмите ту же клавишу.',
+        mode: 'Режим управления',
+        mode4: '4 клавиши (Звёздочки/Кавычки × Буфер/Отправка)',
+        mode3: '3 клавиши (Кавычки, Звёздочки, Отправка)',
+        k_asteriskHold: 'Звёздочки – добавить (ждать)',
+        k_asteriskSend: 'Звёздочки – добавить + отправить',
+        k_quoteHold: 'Кавычки – добавить (ждать)',
+        k_quoteSend: 'Кавычки – добавить + отправить',
+        k_send: 'Отправить (очистить буфер)',
+        separator: 'Разделитель между частями',
+        whisperUrl: 'URL Whisper (пусто = автоматически)',
+        clearBuffer: 'Очистить буфер',
+        sendBuffer: 'Отправить буфер',
+        showLegend: 'Показать обзор клавиш',
+        bufferEmpty: 'Буфер: пусто',
+        bufferLabel: 'Буфер',
+        t_recording: 'Идёт запись (%s)… нажмите клавишу снова для остановки',
+        t_transcribing: 'Транскрибирование…',
+        t_micError: 'Микрофон недоступен',
+        t_failed: 'Ошибка транскрипции – запущен ли STT-сервер?',
+    },
+    ja: {
+        enabled: '有効',
+        uiLang: 'メニュー言語',
+        sttHint: 'ローカルの Whisper STT サーバーを使用します。録音の開始/停止 = 同じキーを押す。',
+        mode: '操作モード',
+        mode4: '4キー（アスタリスク/引用符 × バッファ/送信）',
+        mode3: '3キー（引用符、アスタリスク、送信）',
+        k_asteriskHold: 'アスタリスク – 追加（待機）',
+        k_asteriskSend: 'アスタリスク – 追加＋送信',
+        k_quoteHold: '引用符 – 追加（待機）',
+        k_quoteSend: '引用符 – 追加＋送信',
+        k_send: '送信（バッファを送る）',
+        separator: 'パート間の区切り',
+        whisperUrl: 'Whisper URL（空欄＝自動）',
+        clearBuffer: 'バッファをクリア',
+        sendBuffer: 'バッファを今すぐ送信',
+        showLegend: 'キー一覧を表示',
+        bufferEmpty: 'バッファ：空',
+        bufferLabel: 'バッファ',
+        t_recording: '録音中 (%s)… もう一度キーを押して停止',
+        t_transcribing: '文字起こし中…',
+        t_micError: 'マイクを使用できません',
+        t_failed: '文字起こしに失敗 – STT サーバーは起動していますか？',
+    },
+    zh: {
+        enabled: '启用',
+        uiLang: '菜单语言',
+        sttHint: '使用本地 Whisper STT 服务器。开始/停止录音 = 按同一个键。',
+        mode: '控制模式',
+        mode4: '4 键（星号/引号 × 缓冲/发送）',
+        mode3: '3 键（引号、星号、发送）',
+        k_asteriskHold: '星号 – 追加（等待）',
+        k_asteriskSend: '星号 – 追加 + 发送',
+        k_quoteHold: '引号 – 追加（等待）',
+        k_quoteSend: '引号 – 追加 + 发送',
+        k_send: '发送（清空缓冲）',
+        separator: '片段分隔符',
+        whisperUrl: 'Whisper 网址（留空 = 自动）',
+        clearBuffer: '清空缓冲',
+        sendBuffer: '立即发送缓冲',
+        showLegend: '显示按键概览',
+        bufferEmpty: '缓冲：空',
+        bufferLabel: '缓冲',
+        t_recording: '正在录音 (%s)… 再次按键停止',
+        t_transcribing: '转录中…',
+        t_micError: '麦克风不可用',
+        t_failed: '转录失败 – STT 服务器在运行吗？',
+    },
+};
 
 // ---------- Default-Settings ----------
 const defaultSettings = {
     enabled: true,
-    language: 'de',
+    uiLanguage: 'de',   // Menüsprache (unabhängig von der STT-Sprache)
+    language: 'de',     // Whisper-Erkennungssprache
+    mode: '4',          // '4' = 4-Knopf, '3' = 3-Knopf
     separator: '...',
-    keys: {
+    showLegend: true,
+    keys: {             // 4-Knopf-Modus
         asteriskHold: 'Numpad0',
         asteriskSend: 'Numpad1',
-        quoteHold:    'Numpad2',
-        quoteSend:    'Numpad3',
+        quoteHold: 'Numpad2',
+        quoteSend: 'Numpad3',
     },
-    // Whisper-Endpoint des ST-Extras-Servers; wird automatisch erkannt,
-    // kann aber überschrieben werden.
+    keys3: {            // 3-Knopf-Modus
+        quoteHold: 'Numpad0',     // Taste 1: Quote + Puffer
+        asteriskHold: 'Numpad1',  // Taste 2: Asterisk + Puffer
+        send: 'Numpad2',          // Taste 3: Senden
+    },
     whisperUrl: '',
 };
 
@@ -39,34 +226,66 @@ function getSettings() {
     if (!extensionSettings[MODULE_NAME]) {
         extensionSettings[MODULE_NAME] = structuredClone(defaultSettings);
     }
-    // fehlende Felder ergänzen (bei Update)
+    const cur = extensionSettings[MODULE_NAME];
+    // fehlende Top-Level-Felder ergänzen (bei Update von älterer Version)
     for (const k of Object.keys(defaultSettings)) {
-        if (extensionSettings[MODULE_NAME][k] === undefined) {
-            extensionSettings[MODULE_NAME][k] = structuredClone(defaultSettings[k]);
-        }
+        if (cur[k] === undefined) cur[k] = structuredClone(defaultSettings[k]);
     }
-    if (!extensionSettings[MODULE_NAME].keys) {
-        extensionSettings[MODULE_NAME].keys = structuredClone(defaultSettings.keys);
+    // verschachtelte Key-Maps absichern
+    if (!cur.keys) cur.keys = structuredClone(defaultSettings.keys);
+    else for (const k of Object.keys(defaultSettings.keys)) {
+        if (cur.keys[k] === undefined) cur.keys[k] = defaultSettings.keys[k];
     }
-    return extensionSettings[MODULE_NAME];
+    if (!cur.keys3) cur.keys3 = structuredClone(defaultSettings.keys3);
+    else for (const k of Object.keys(defaultSettings.keys3)) {
+        if (cur.keys3[k] === undefined) cur.keys3[k] = defaultSettings.keys3[k];
+    }
+    return cur;
 }
 
-// ---------- Puffer ----------
+function t(key) {
+    const lang = I18N[getSettings().uiLanguage] ? getSettings().uiLanguage : 'de';
+    return (I18N[lang] && I18N[lang][key]) || I18N.de[key] || key;
+}
+
+// ---------- HTML-Escaping ----------
+function escapeHtml(str) {
+    return String(str).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+}
+function escapeAttr(str) {
+    return String(str).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+}
+
+// ---------- Zustand ----------
 let buffer = [];          // Array fertig formatierter Teile
 let isRecording = false;  // Schutz gegen Doppel-Trigger
 let mediaRecorder = null;
 let audioChunks = [];
-let activeMode = null;     // {wrap:'asterisk'|'quote', send:boolean}
+let activeMode = null;    // {wrap:'asterisk'|'quote', send:boolean}
+let activeSym = null;     // Symbol der gerade aufnehmenden Taste (für Highlight)
+
+// ---------- Symbole / Tastennamen ----------
+function symFor(mode) {
+    return (mode.wrap === 'quote' ? '"' : '*') + (mode.send ? '→' : '+');
+}
+
+function shortKey(code) {
+    if (!code) return '—';
+    return String(code)
+        .replace('Numpad', 'Num')
+        .replace('Digit', '')
+        .replace('Key', '')
+        .replace('Arrow', '');
+}
 
 // ---------- Formatierung ----------
 function formatPart(text, wrap) {
-    let t = (text || '').trim();
-    if (!t) return '';
-    // doppelte Satzzeichen / Whisper-Artefakte säubern
-    t = t.replace(/\s+/g, ' ');
-    if (wrap === 'asterisk') return `*${t}*`;
-    if (wrap === 'quote')    return `"${t}"`;
-    return t;
+    let s = (text || '').trim();
+    if (!s) return '';
+    s = s.replace(/\s+/g, ' ');
+    if (wrap === 'asterisk') return `*${s}*`;
+    if (wrap === 'quote') return `"${s}"`;
+    return s;
 }
 
 function getTextarea() {
@@ -80,7 +299,6 @@ function pushToTextarea(finalText) {
         return;
     }
     ta.value = finalText;
-    // ST lauscht auf input/change zum Zähler-Update
     ta.dispatchEvent(new Event('input', { bubbles: true }));
     ta.focus();
 }
@@ -91,18 +309,15 @@ function flushBuffer({ send }) {
     const finalText = buffer.join(sep);
     pushToTextarea(finalText);
     buffer = [];
-    // Clipboard-Fenster sofort leeren/ausblenden, sobald gesendet/geleert wird
-    updateBufferIndicator();
+    // Panel sofort aktualisieren, sobald gesendet/geleert wird
+    renderPanel();
 
     if (send) {
-        // ST-eigenes Senden, identisch zum Enter/Send-Button
         const sendBtn = document.getElementById('send_but');
-        // kleiner Delay, damit der input-Event verarbeitet wird
         setTimeout(() => {
             if (sendBtn) {
                 sendBtn.click();
             } else {
-                // Fallback über Slash-Command
                 context.executeSlashCommandsWithOptions(`/send ${finalText.replace(/\|/g, '\\|')}`);
             }
         }, 60);
@@ -113,7 +328,6 @@ function flushBuffer({ send }) {
 function detectWhisperUrl() {
     const s = getSettings();
     if (s.whisperUrl) return s.whisperUrl;
-    // ST-Extras-Server-URL aus den globalen Settings ableiten
     try {
         const extrasUrl = context.extensionSettings?.apiUrl
             || window?.extension_settings?.apiUrl
@@ -135,7 +349,6 @@ async function transcribe(audioBlob) {
         throw new Error(`Whisper HTTP ${resp.status}`);
     }
     const data = await resp.json();
-    // ST-Extras gibt { transcript: "..." } zurück
     return data.transcript ?? data.text ?? '';
 }
 
@@ -144,6 +357,7 @@ async function startRecording(mode) {
     if (isRecording) return;
     isRecording = true;
     activeMode = mode;
+    activeSym = symFor(mode);
     audioChunks = [];
 
     try {
@@ -151,16 +365,19 @@ async function startRecording(mode) {
         mediaRecorder = new MediaRecorder(stream);
         mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) audioChunks.push(e.data); };
         mediaRecorder.onstop = async () => {
-            stream.getTracks().forEach(t => t.stop());
+            stream.getTracks().forEach(tr => tr.stop());
             const blob = new Blob(audioChunks, { type: 'audio/webm' });
             await handleTranscription(blob);
         };
         mediaRecorder.start();
-        toastr.info(`Aufnahme läuft (${mode.wrap})… Taste erneut drücken zum Stoppen`, 'Multi-Dictation', { timeOut: 1500 });
+        renderPanel();
+        toastr.info(t('t_recording').replace('%s', mode.wrap === 'quote' ? '"' : '*'), 'Multi-Dictation', { timeOut: 1500 });
     } catch (err) {
         isRecording = false;
+        activeSym = null;
+        renderPanel();
         console.error('[MultiDictation] Mikrofon-Fehler:', err);
-        toastr.error('Mikrofon nicht verfügbar', 'Multi-Dictation');
+        toastr.error(t('t_micError'), 'Multi-Dictation');
     }
 }
 
@@ -173,22 +390,23 @@ function stopRecording() {
 async function handleTranscription(blob) {
     const mode = activeMode;
     try {
-        toastr.info('Transkribiere…', 'Multi-Dictation', { timeOut: 1200 });
+        toastr.info(t('t_transcribing'), 'Multi-Dictation', { timeOut: 1200 });
         const text = await transcribe(blob);
         const part = formatPart(text, mode.wrap);
         if (part) {
             buffer.push(part);
-            updateBufferIndicator();
         }
         if (mode.send) {
             flushBuffer({ send: true });
         }
     } catch (err) {
         console.error('[MultiDictation] Transkription fehlgeschlagen:', err);
-        toastr.error('Transkription fehlgeschlagen – läuft der Extras-Server?', 'Multi-Dictation');
+        toastr.error(t('t_failed'), 'Multi-Dictation');
     } finally {
         isRecording = false;
         activeMode = null;
+        activeSym = null;
+        renderPanel();
     }
 }
 
@@ -201,20 +419,59 @@ function triggerMode(mode) {
     }
 }
 
-// ---------- Puffer-Anzeige ----------
-function updateBufferIndicator() {
-    let el = document.getElementById('md_buffer_indicator');
-    if (!el) {
-        el = document.createElement('div');
-        el.id = 'md_buffer_indicator';
-        document.body.appendChild(el);
+// ---------- Tasten je Modus (für das Legenden-Panel) ----------
+function cellsForMode() {
+    const s = getSettings();
+    if (s.mode === '3') {
+        return [
+            { sym: symFor({ wrap: 'quote', send: false }), code: s.keys3.quoteHold },
+            { sym: symFor({ wrap: 'asterisk', send: false }), code: s.keys3.asteriskHold },
+            { sym: '→', code: s.keys3.send },
+        ];
     }
-    if (buffer.length === 0) {
-        el.style.display = 'none';
-        el.textContent = '';
+    return [
+        { sym: symFor({ wrap: 'asterisk', send: false }), code: s.keys.asteriskHold },
+        { sym: symFor({ wrap: 'asterisk', send: true }), code: s.keys.asteriskSend },
+        { sym: symFor({ wrap: 'quote', send: false }), code: s.keys.quoteHold },
+        { sym: symFor({ wrap: 'quote', send: true }), code: s.keys.quoteSend },
+    ];
+}
+
+// ---------- Legenden-Panel (unten rechts) ----------
+function renderPanel() {
+    const s = getSettings();
+    let panel = document.getElementById('md_panel');
+
+    if (!s.enabled || !s.showLegend) {
+        if (panel) panel.style.display = 'none';
     } else {
-        el.style.display = 'block';
-        el.textContent = `📋 Puffer (${buffer.length}): ${buffer.join(getSettings().separator)}`;
+        if (!panel) {
+            panel = document.createElement('div');
+            panel.id = 'md_panel';
+            document.body.appendChild(panel);
+        }
+        panel.style.display = 'block';
+
+        const cells = cellsForMode().map(c => `
+            <div class="md-cell ${activeSym && c.sym === activeSym ? 'md-cell-active' : ''}">
+                <div class="md-cell-fn">${escapeHtml(c.sym)}</div>
+                <div class="md-cell-key">${escapeHtml(shortKey(c.code))}</div>
+            </div>`).join('');
+
+        const bufHtml = buffer.length
+            ? `<div id="md_buffer_line">📋 ${escapeHtml(t('bufferLabel'))} (${buffer.length}): ${escapeHtml(buffer.join(s.separator))}</div>`
+            : '';
+
+        panel.innerHTML = `
+            <div id="md_cells">${cells}</div>
+            ${bufHtml}
+            <div id="md_credits">${escapeHtml(CREDITS)}</div>`;
+    }
+
+    // Status-Zeile im Einstellungs-Panel mitziehen
+    const status = document.getElementById('md_buffer_status');
+    if (status) {
+        status.textContent = buffer.length ? `${t('bufferLabel')} (${buffer.length})` : t('bufferEmpty');
     }
 }
 
@@ -223,24 +480,36 @@ function onKeyDown(e) {
     const s = getSettings();
     if (!s.enabled) return;
 
-    // Nicht auslösen, während in einem Textfeld getippt wird,
-    // ES SEI DENN es ist das Chat-Eingabefeld (dann sind die Numpad-Keys gewollt).
     const ae = document.activeElement;
+    // In fremden Eingabefeldern nicht auslösen (Chat-Eingabefeld ausgenommen).
     const inOtherInput = ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA') && ae.id !== 'send_textarea';
     if (inOtherInput) return;
+    // Während eine Taste belegt wird, nicht auslösen.
+    if (ae && ae.classList && ae.classList.contains('md-key-input')) return;
 
-    const code = e.code; // z.B. "Numpad0"
-    const k = s.keys;
+    const code = e.code;
 
-    if (code === k.asteriskHold) { e.preventDefault(); triggerMode({ wrap: 'asterisk', send: false }); }
-    else if (code === k.asteriskSend) { e.preventDefault(); triggerMode({ wrap: 'asterisk', send: true }); }
-    else if (code === k.quoteHold)  { e.preventDefault(); triggerMode({ wrap: 'quote', send: false }); }
-    else if (code === k.quoteSend)  { e.preventDefault(); triggerMode({ wrap: 'quote', send: true }); }
+    if (s.mode === '3') {
+        const k = s.keys3;
+        if (code === k.quoteHold) { e.preventDefault(); triggerMode({ wrap: 'quote', send: false }); }
+        else if (code === k.asteriskHold) { e.preventDefault(); triggerMode({ wrap: 'asterisk', send: false }); }
+        else if (code === k.send) {
+            e.preventDefault();
+            // Läuft gerade eine Aufnahme? Erst stoppen (Teil sichern), sonst Puffer senden.
+            if (isRecording) stopRecording();
+            else flushBuffer({ send: true });
+        }
+    } else {
+        const k = s.keys;
+        if (code === k.asteriskHold) { e.preventDefault(); triggerMode({ wrap: 'asterisk', send: false }); }
+        else if (code === k.asteriskSend) { e.preventDefault(); triggerMode({ wrap: 'asterisk', send: true }); }
+        else if (code === k.quoteHold) { e.preventDefault(); triggerMode({ wrap: 'quote', send: false }); }
+        else if (code === k.quoteSend) { e.preventDefault(); triggerMode({ wrap: 'quote', send: true }); }
+    }
 }
 
 // ---------- Settings-UI ----------
 function buildSettingsUI() {
-    const s = getSettings();
     const html = `
     <div class="multi-dictation-settings">
         <div class="inline-drawer">
@@ -248,71 +517,162 @@ function buildSettingsUI() {
                 <b>Multi-Mode Dictation</b>
                 <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
             </div>
-            <div class="inline-drawer-content">
-                <label class="checkbox_label">
-                    <input id="md_enabled" type="checkbox" ${s.enabled ? 'checked' : ''}>
-                    <span>Aktiviert</span>
-                </label>
-
-                <small>Nutzt den ST-Extras Whisper-Server. Aufnahme starten/stoppen = gleiche Taste drücken.</small>
-
-                <hr>
-                <label>Asterisk – anhängen (warten)</label>
-                <input id="md_key_ah" class="text_pole" value="${s.keys.asteriskHold}">
-                <label>Asterisk – anhängen + senden</label>
-                <input id="md_key_as" class="text_pole" value="${s.keys.asteriskSend}">
-                <label>Quote – anhängen (warten)</label>
-                <input id="md_key_qh" class="text_pole" value="${s.keys.quoteHold}">
-                <label>Quote – anhängen + senden</label>
-                <input id="md_key_qs" class="text_pole" value="${s.keys.quoteSend}">
-
-                <hr>
-                <label>Trenner zwischen Teilen</label>
-                <input id="md_separator" class="text_pole" value="${s.separator}">
-
-                <label>Whisper-URL (leer = automatisch)</label>
-                <input id="md_whisper_url" class="text_pole" placeholder="http://localhost:5100/api/speech-recognition/whisper/process-audio" value="${s.whisperUrl}">
-
-                <hr>
-                <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                    <input id="md_clear_buffer" class="menu_button" type="button" value="Puffer leeren">
-                    <input id="md_send_buffer" class="menu_button" type="button" value="Puffer jetzt senden">
-                </div>
-                <small id="md_buffer_status">Puffer: leer</small>
-            </div>
+            <div class="inline-drawer-content" id="md_settings_body"></div>
         </div>
     </div>`;
-
     $('#extensions_settings2').append(html);
+    renderSettingsBody();
+}
 
-    // Listener
-    const save = () => {
-        const st = getSettings();
-        st.enabled = $('#md_enabled').prop('checked');
-        st.keys.asteriskHold = $('#md_key_ah').val().trim();
-        st.keys.asteriskSend = $('#md_key_as').val().trim();
-        st.keys.quoteHold = $('#md_key_qh').val().trim();
-        st.keys.quoteSend = $('#md_key_qs').val().trim();
-        st.separator = $('#md_separator').val();
-        st.whisperUrl = $('#md_whisper_url').val().trim();
+function renderSettingsBody() {
+    const s = getSettings();
+    const body = document.getElementById('md_settings_body');
+    if (!body) return;
+
+    const langOptions = Object.keys(LANG_NAMES).map(code =>
+        `<option value="${code}" ${s.uiLanguage === code ? 'selected' : ''}>${escapeHtml(LANG_NAMES[code])}</option>`).join('');
+
+    const modeOptions = `
+        <option value="4" ${s.mode === '4' ? 'selected' : ''}>${escapeHtml(t('mode4'))}</option>
+        <option value="3" ${s.mode === '3' ? 'selected' : ''}>${escapeHtml(t('mode3'))}</option>`;
+
+    let keyFields;
+    if (s.mode === '3') {
+        keyFields = `
+            <label>1. ${escapeHtml(t('k_quoteHold'))}</label>
+            <input id="md_k3_quote" class="text_pole md-key-input" value="${escapeAttr(s.keys3.quoteHold)}">
+            <label>2. ${escapeHtml(t('k_asteriskHold'))}</label>
+            <input id="md_k3_aster" class="text_pole md-key-input" value="${escapeAttr(s.keys3.asteriskHold)}">
+            <label>3. ${escapeHtml(t('k_send'))}</label>
+            <input id="md_k3_send" class="text_pole md-key-input" value="${escapeAttr(s.keys3.send)}">`;
+    } else {
+        keyFields = `
+            <label>${escapeHtml(t('k_asteriskHold'))}</label>
+            <input id="md_k4_ah" class="text_pole md-key-input" value="${escapeAttr(s.keys.asteriskHold)}">
+            <label>${escapeHtml(t('k_asteriskSend'))}</label>
+            <input id="md_k4_as" class="text_pole md-key-input" value="${escapeAttr(s.keys.asteriskSend)}">
+            <label>${escapeHtml(t('k_quoteHold'))}</label>
+            <input id="md_k4_qh" class="text_pole md-key-input" value="${escapeAttr(s.keys.quoteHold)}">
+            <label>${escapeHtml(t('k_quoteSend'))}</label>
+            <input id="md_k4_qs" class="text_pole md-key-input" value="${escapeAttr(s.keys.quoteSend)}">`;
+    }
+
+    body.innerHTML = `
+        <div class="md-row">
+            <div>
+                <label class="checkbox_label" style="margin-top:0;">
+                    <input id="md_enabled" type="checkbox" ${s.enabled ? 'checked' : ''}>
+                    <span>${escapeHtml(t('enabled'))}</span>
+                </label>
+            </div>
+            <div>
+                <label>${escapeHtml(t('uiLang'))}</label>
+                <select id="md_ui_lang" class="text_pole widthNatural">${langOptions}</select>
+            </div>
+        </div>
+
+        <small>${escapeHtml(t('sttHint'))}</small>
+        <hr>
+
+        <label>${escapeHtml(t('mode'))}</label>
+        <select id="md_mode" class="text_pole">${modeOptions}</select>
+
+        <hr>
+        ${keyFields}
+
+        <hr>
+        <label>${escapeHtml(t('separator'))}</label>
+        <input id="md_separator" class="text_pole" value="${escapeAttr(s.separator)}">
+
+        <label>${escapeHtml(t('whisperUrl'))}</label>
+        <input id="md_whisper_url" class="text_pole" placeholder="http://localhost:5100/api/speech-recognition/whisper/process-audio" value="${escapeAttr(s.whisperUrl)}">
+
+        <hr>
+        <label class="checkbox_label">
+            <input id="md_show_legend" type="checkbox" ${s.showLegend ? 'checked' : ''}>
+            <span>${escapeHtml(t('showLegend'))}</span>
+        </label>
+
+        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:6px;">
+            <input id="md_clear_buffer" class="menu_button" type="button" value="${escapeAttr(t('clearBuffer'))}">
+            <input id="md_send_buffer" class="menu_button" type="button" value="${escapeAttr(t('sendBuffer'))}">
+        </div>
+        <small id="md_buffer_status">${escapeHtml(t('bufferEmpty'))}</small>
+
+        <div class="md-credit-line">${escapeHtml(CREDITS)}</div>`;
+
+    bindSettingsEvents();
+    renderPanel();
+}
+
+function bindSettingsEvents() {
+    $('#md_enabled').off('change').on('change', function () {
+        getSettings().enabled = $(this).prop('checked');
         saveSettingsDebounced();
-    };
-
-    $('#md_enabled, #md_key_ah, #md_key_as, #md_key_qh, #md_key_qs, #md_separator, #md_whisper_url')
-        .on('input change', save);
-
-    // Tasten per Tastendruck erfassen (Klick ins Feld, dann Taste drücken)
-    ['md_key_ah','md_key_as','md_key_qh','md_key_qs'].forEach(id => {
-        const input = document.getElementById(id);
-        input.addEventListener('keydown', (ev) => {
-            ev.preventDefault();
-            input.value = ev.code;
-            save();
-        });
+        renderPanel();
     });
 
-    $('#md_clear_buffer').on('click', () => { buffer = []; updateBufferIndicator(); $('#md_buffer_status').text('Puffer: leer'); });
-    $('#md_send_buffer').on('click', () => flushBuffer({ send: true }));
+    // Menüsprache -> Panel komplett neu aufbauen (Labels übersetzen)
+    $('#md_ui_lang').off('change').on('change', function () {
+        getSettings().uiLanguage = $(this).val();
+        saveSettingsDebounced();
+        renderSettingsBody();
+    });
+
+    // Modus -> Tastenfelder neu aufbauen
+    $('#md_mode').off('change').on('change', function () {
+        getSettings().mode = $(this).val();
+        saveSettingsDebounced();
+        renderSettingsBody();
+    });
+
+    $('#md_separator').off('input change').on('input change', function () {
+        getSettings().separator = $(this).val();
+        saveSettingsDebounced();
+        renderPanel();
+    });
+
+    $('#md_whisper_url').off('input change').on('input change', function () {
+        getSettings().whisperUrl = $(this).val().trim();
+        saveSettingsDebounced();
+    });
+
+    $('#md_show_legend').off('change').on('change', function () {
+        getSettings().showLegend = $(this).prop('checked');
+        saveSettingsDebounced();
+        renderPanel();
+    });
+
+    // Tasten per Tastendruck erfassen (ins Feld klicken, dann Taste drücken)
+    const bindKey = (id, setter) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('keydown', (ev) => {
+            ev.preventDefault();
+            ev.stopPropagation();
+            el.value = ev.code;
+            setter(ev.code);
+            saveSettingsDebounced();
+            renderPanel();
+        });
+    };
+
+    if (getSettings().mode === '3') {
+        bindKey('md_k3_quote', c => getSettings().keys3.quoteHold = c);
+        bindKey('md_k3_aster', c => getSettings().keys3.asteriskHold = c);
+        bindKey('md_k3_send', c => getSettings().keys3.send = c);
+    } else {
+        bindKey('md_k4_ah', c => getSettings().keys.asteriskHold = c);
+        bindKey('md_k4_as', c => getSettings().keys.asteriskSend = c);
+        bindKey('md_k4_qh', c => getSettings().keys.quoteHold = c);
+        bindKey('md_k4_qs', c => getSettings().keys.quoteSend = c);
+    }
+
+    $('#md_clear_buffer').off('click').on('click', () => {
+        buffer = [];
+        renderPanel();
+    });
+    $('#md_send_buffer').off('click').on('click', () => flushBuffer({ send: true }));
 }
 
 // ---------- Init ----------
@@ -320,6 +680,6 @@ jQuery(async () => {
     getSettings();
     buildSettingsUI();
     document.addEventListener('keydown', onKeyDown, true);
-    updateBufferIndicator();
-    console.log('[MultiDictation] geladen');
+    renderPanel();
+    console.log('[MultiDictation] geladen (v0.2)');
 });
