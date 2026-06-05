@@ -1,0 +1,29 @@
+#md_buffer_indicator {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    max-width: 320px;
+    background: rgba(0, 0, 0, 0.8);
+    color: #fff;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 0.85em;
+    z-index: 9999;
+    pointer-events: none;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    display: none;
+    white-space: normal;
+    overflow: hidden;
+    word-break: break-word;
+}
+
+.multi-dictation-settings .text_pole {
+    margin-bottom: 6px;
+}
+
+.multi-dictation-settings label {
+    display: block;
+    margin-top: 4px;
+    font-size: 0.9em;
+    opacity: 0.85;
+}
