@@ -1,4 +1,4 @@
-/* ---------- Legenden-Panel unten rechts ---------- */
+/* ---------- Legend panel (bottom right) ---------- */
 #md_panel {
     position: fixed;
     bottom: 20px;
@@ -10,7 +10,7 @@
     border-radius: 10px;
     font-size: 0.8em;
     z-index: 9999;
-    pointer-events: none; /* nur die Liste fängt Klicks ab */
+    pointer-events: none; /* only the list captures clicks */
     border: 1px solid rgba(255, 255, 255, 0.2);
     display: none;
 }
@@ -45,19 +45,19 @@
     line-height: 1.15;
 }
 
-/* aktive (gerade aufnehmende) Taste hervorheben */
+/* highlight the currently recording key */
 .md-cell-active {
     background: rgba(80, 160, 255, 0.45);
     border-color: rgba(120, 190, 255, 0.9);
 }
 
-/* Lösch-Taste optisch abgesetzt */
+/* delete key visually set apart */
 .md-cell-del {
     background: rgba(255, 90, 90, 0.14);
     border-color: rgba(255, 120, 120, 0.45);
 }
 
-/* ---------- Aufnahme-Liste (editierbar) ---------- */
+/* ---------- Recording list (editable) ---------- */
 #md_list_header {
     margin-top: 8px;
     opacity: 0.7;
@@ -70,7 +70,7 @@
     flex-direction: column;
     gap: 3px;
     max-width: 340px;
-    pointer-events: auto; /* klickbar/editierbar */
+    pointer-events: auto; /* clickable / editable */
 }
 
 .md-item {
@@ -130,7 +130,7 @@
     opacity: 0.55;
 }
 
-/* ---------- Einstellungs-Panel ---------- */
+/* ---------- Settings panel ---------- */
 .multi-dictation-settings .text_pole {
     margin-bottom: 6px;
 }

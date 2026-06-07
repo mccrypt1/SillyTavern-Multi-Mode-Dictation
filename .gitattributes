@@ -1,4 +1,4 @@
-# Einheitliche Zeilenenden im Repo (LF), damit Diffs sauber bleiben
+# Consistent line endings across the repo (LF) for clean diffs
 * text=auto eol=lf
 *.bat text eol=crlf
 *.png binary

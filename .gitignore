@@ -1,4 +1,4 @@
-# OS / Editor
+# OS / editor
 Thumbs.db
 desktop.ini
 .DS_Store
@@ -9,5 +9,5 @@ desktop.ini
 *.log
 *.tmp
 
-# Archive
+# Archives
 *.zip

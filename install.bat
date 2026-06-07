@@ -1,7 +1,7 @@
 @echo off
 REM ============================================================
-REM  Multi-Mode Dictation - Installer fuer SillyTavern
-REM  Zielpfad fest eingetragen: C:\AI\SillyTavern
+REM  Multi-Mode Dictation - Installer for SillyTavern
+REM  Target path hard-coded: C:\AI\SillyTavern
 REM ============================================================
 
 set "ST_PATH=C:\AI\SillyTavern"
@@ -12,44 +12,44 @@ echo.
 echo  Multi-Mode Dictation - Installation
 echo  ====================================
 echo.
-echo  Quelle: %SOURCE%
-echo  Ziel  : %TARGET%
+echo  Source: %SOURCE%
+echo  Target: %TARGET%
 echo.
 
-REM Pruefen, ob der SillyTavern-Ordner existiert
+REM Check whether the SillyTavern folder exists
 if not exist "%ST_PATH%\public\scripts\extensions" (
-    echo  [FEHLER] SillyTavern wurde unter C:\AI\SillyTavern nicht gefunden.
-    echo           Bitte den Pfad oben in dieser Datei anpassen.
+    echo  [ERROR] SillyTavern was not found at C:\AI\SillyTavern.
+    echo          Please adjust the path at the top of this file.
     echo.
     pause
     exit /b 1
 )
 
-REM third-party-Ordner anlegen, falls nicht vorhanden
+REM Create the third-party folder if missing
 if not exist "%ST_PATH%\public\scripts\extensions\third-party" (
-    echo  Erstelle third-party-Ordner...
+    echo  Creating third-party folder...
     mkdir "%ST_PATH%\public\scripts\extensions\third-party"
 )
 
-REM Zielordner anlegen
+REM Create the target folder
 if not exist "%TARGET%" (
     mkdir "%TARGET%"
 )
 
-echo  Kopiere Dateien...
+echo  Copying files...
 copy /Y "%SOURCE%manifest.json" "%TARGET%\" >nul
 copy /Y "%SOURCE%index.js"      "%TARGET%\" >nul
 copy /Y "%SOURCE%style.css"     "%TARGET%\" >nul
 copy /Y "%SOURCE%README.md"     "%TARGET%\" >nul
 
 echo.
-echo  [OK] Installation abgeschlossen.
+echo  [OK] Installation complete.
 echo.
-echo  Naechste Schritte:
-echo    1. SillyTavern im Browser neu laden (F5)
-echo    2. Extensions-Menue oeffnen -^> "Multi-Mode Dictation"
-echo    3. Alte Numpad0-Belegung in der eingebauten
-echo       Speech-Recognition leeren (Konflikt vermeiden)
-echo    4. Test: Numpad0 druecken, sprechen, Numpad0 erneut druecken
+echo  Next steps:
+echo    1. Reload SillyTavern in the browser (F5)
+echo    2. Open the Extensions menu -^> "Multi-Mode Dictation"
+echo    3. Clear any built-in Speech Recognition hotkey that
+echo       collides (e.g. Numpad0) to avoid conflicts
+echo    4. Test: press Numpad0, speak, press Numpad0 again
 echo.
 pause

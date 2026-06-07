@@ -1,17 +1,17 @@
 /*
- * Multi-Mode Dictation für SillyTavern
+ * Multi-Mode Dictation for SillyTavern
  * ------------------------------------
- * Spracheingabe über das lokale Whisper-STT, formatiert das Transkript
- * (Asterisks / Quotes) und sammelt die Teile in einem editierbaren Puffer,
- * bis eine "Senden"-Aktion ausgelöst wird.
+ * Voice input via the local Whisper STT, formats the transcript
+ * (asterisks / quotes) and collects the parts in an editable buffer
+ * until a "send" action is triggered.
  *
- * Modi:
- *   4-Knopf (Standard): Asterisk/Quote × Puffer/Senden  (Numpad0–3)
- *   3-Knopf:            Quote+Puffer, Asterisk+Puffer, Senden  (Numpad0–2)
- * Zusätzlich pro Modus eine frei belegbare Taste zum Löschen der letzten Aufnahme.
+ * Modes:
+ *   4-key (default): Asterisk/Quote x Buffer/Send   (Numpad0-3)
+ *   3-key:           Quote+Buffer, Asterisk+Buffer, Send  (Numpad0-2)
+ * Plus, per mode, a freely assignable key to delete the last recording.
  *
- * Die gepufferten Aufnahmen werden unten rechts als Liste angezeigt: jede Zeile
- * ist anklickbar (Text bearbeiten) und per × einzeln löschbar.
+ * The buffered recordings are shown bottom-right as a list: each row is
+ * clickable (edit the text) and individually deletable via x.
  *
  * made by FragThief_1337
  */
@@ -22,7 +22,7 @@ const CREDITS = 'made by FragThief_1337';
 const context = SillyTavern.getContext();
 const { extensionSettings, saveSettingsDebounced } = context;
 
-// ---------- Übersetzungen (UI-Sprache) ----------
+// ---------- Translations (UI language) ----------
 const LANG_NAMES = {
     en: 'English',
     de: 'Deutsch',
@@ -218,25 +218,25 @@ const I18N = {
     },
 };
 
-// ---------- Default-Settings ----------
+// ---------- Default settings ----------
 const defaultSettings = {
     enabled: true,
-    uiLanguage: 'en',   // Menüsprache (Standard Englisch; unabhängig von der STT-Sprache)
-    language: 'de',     // Whisper-Erkennungssprache
-    mode: '4',          // '4' = 4-Knopf, '3' = 3-Knopf
+    uiLanguage: 'en',   // menu language (English by default; independent of the STT language)
+    language: 'de',     // Whisper recognition language
+    mode: '4',          // '4' = 4-key, '3' = 3-key
     separator: '...',
     showLegend: true,
-    keys: {             // 4-Knopf-Modus
+    keys: {             // 4-key mode
         asteriskHold: 'Numpad0',
         asteriskSend: 'Numpad1',
         quoteHold: 'Numpad2',
         quoteSend: 'Numpad3',
         deleteLast: 'NumpadDecimal',
     },
-    keys3: {            // 3-Knopf-Modus
-        quoteHold: 'Numpad0',     // Taste 1: Quote + Puffer
-        asteriskHold: 'Numpad1',  // Taste 2: Asterisk + Puffer
-        send: 'Numpad2',          // Taste 3: Senden
+    keys3: {            // 3-key mode
+        quoteHold: 'Numpad0',     // key 1: Quote + buffer
+        asteriskHold: 'Numpad1',  // key 2: Asterisk + buffer
+        send: 'Numpad2',          // key 3: Send
         deleteLast: 'NumpadDecimal',
     },
     whisperUrl: '',
@@ -247,11 +247,11 @@ function getSettings() {
         extensionSettings[MODULE_NAME] = structuredClone(defaultSettings);
     }
     const cur = extensionSettings[MODULE_NAME];
-    // fehlende Top-Level-Felder ergänzen (bei Update von älterer Version)
+    // fill in missing top-level fields (when updating from an older version)
     for (const k of Object.keys(defaultSettings)) {
         if (cur[k] === undefined) cur[k] = structuredClone(defaultSettings[k]);
     }
-    // verschachtelte Key-Maps absichern (auch neue Keys wie deleteLast)
+    // ensure nested key maps exist (including new keys like deleteLast)
     if (!cur.keys) cur.keys = structuredClone(defaultSettings.keys);
     else for (const k of Object.keys(defaultSettings.keys)) {
         if (cur.keys[k] === undefined) cur.keys[k] = defaultSettings.keys[k];
@@ -268,7 +268,7 @@ function t(key) {
     return (I18N[lang] && I18N[lang][key]) || I18N.en[key] || key;
 }
 
-// ---------- HTML-Escaping ----------
+// ---------- HTML escaping ----------
 function escapeHtml(str) {
     return String(str).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 }
@@ -276,16 +276,16 @@ function escapeAttr(str) {
     return String(str).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 }
 
-// ---------- Zustand ----------
-let buffer = [];          // Array von { wrap:'asterisk'|'quote', text:'…' }
-let isRecording = false;  // Schutz gegen Doppel-Trigger
+// ---------- State ----------
+let buffer = [];          // array of { wrap:'asterisk'|'quote', text:'…' }
+let isRecording = false;  // guard against double triggers
 let mediaRecorder = null;
 let audioChunks = [];
 let activeMode = null;    // {wrap:'asterisk'|'quote', send:boolean}
-let activeSym = null;     // Symbol der gerade aufnehmenden Taste (für Highlight)
-let editingIndex = null;  // Index der gerade bearbeiteten Aufnahme (oder null)
+let activeSym = null;     // symbol of the currently recording key (for highlight)
+let editingIndex = null;  // index of the recording being edited (or null)
 
-// ---------- Symbole / Tastennamen ----------
+// ---------- Symbols / key names ----------
 function symFor(mode) {
     return (mode.wrap === 'quote' ? '"' : '*') + (mode.send ? '→' : '+');
 }
@@ -299,7 +299,7 @@ function shortKey(code) {
         .replace('Arrow', '');
 }
 
-// ---------- Formatierung ----------
+// ---------- Formatting ----------
 function renderPart(item) {
     const tx = (item.text || '').trim();
     if (!tx) return '';
@@ -315,7 +315,7 @@ function getTextarea() {
 function pushToTextarea(finalText) {
     const ta = getTextarea();
     if (!ta) {
-        console.error('[MultiDictation] send_textarea nicht gefunden');
+        console.error('[MultiDictation] send_textarea not found');
         return;
     }
     ta.value = finalText;
@@ -331,7 +331,7 @@ function flushBuffer({ send }) {
     pushToTextarea(finalText);
     buffer = [];
     editingIndex = null;
-    // Panel sofort aktualisieren, sobald gesendet/geleert wird
+    // refresh the panel immediately once sent/cleared
     renderPanel();
 
     if (send) {
@@ -346,7 +346,7 @@ function flushBuffer({ send }) {
     }
 }
 
-// ---------- Whisper-Aufruf ----------
+// ---------- Whisper call ----------
 function detectWhisperUrl() {
     const s = getSettings();
     if (s.whisperUrl) return s.whisperUrl;
@@ -374,7 +374,7 @@ async function transcribe(audioBlob) {
     return data.transcript ?? data.text ?? '';
 }
 
-// ---------- Aufnahme-Steuerung ----------
+// ---------- Recording control ----------
 async function startRecording(mode) {
     if (isRecording) return;
     isRecording = true;
@@ -398,7 +398,7 @@ async function startRecording(mode) {
         isRecording = false;
         activeSym = null;
         renderPanel();
-        console.error('[MultiDictation] Mikrofon-Fehler:', err);
+        console.error('[MultiDictation] Microphone error:', err);
         toastr.error(t('t_micError'), 'Multi-Dictation');
     }
 }
@@ -416,14 +416,14 @@ async function handleTranscription(blob) {
         const text = await transcribe(blob);
         const cleaned = (text || '').trim().replace(/\s+/g, ' ');
         if (cleaned) {
-            commitEdit(); // evtl. offene Bearbeitung zuerst sichern
+            commitEdit(); // save any open edit first
             buffer.push({ wrap: mode.wrap, text: cleaned });
         }
         if (mode.send) {
             flushBuffer({ send: true });
         }
     } catch (err) {
-        console.error('[MultiDictation] Transkription fehlgeschlagen:', err);
+        console.error('[MultiDictation] Transcription failed:', err);
         toastr.error(t('t_failed'), 'Multi-Dictation');
     } finally {
         isRecording = false;
@@ -433,7 +433,7 @@ async function handleTranscription(blob) {
     }
 }
 
-// Toggle: gleiche Taste startet/stoppt
+// Toggle: the same key starts/stops
 function triggerMode(mode) {
     if (isRecording) {
         stopRecording();
@@ -442,7 +442,7 @@ function triggerMode(mode) {
     }
 }
 
-// ---------- Puffer-Bearbeitung ----------
+// ---------- Buffer editing ----------
 function commitEdit() {
     if (editingIndex === null) return;
     const panel = document.getElementById('md_panel');
@@ -450,7 +450,7 @@ function commitEdit() {
     if (inp && buffer[editingIndex]) {
         const val = inp.value.trim().replace(/\s+/g, ' ');
         if (val) buffer[editingIndex].text = val;
-        else buffer.splice(editingIndex, 1); // leer -> Eintrag entfernen
+        else buffer.splice(editingIndex, 1); // empty -> remove entry
     }
     editingIndex = null;
 }
@@ -478,7 +478,7 @@ function deleteLastItem() {
     toastr.info(t('t_deletedLast'), 'Multi-Dictation', { timeOut: 1000 });
 }
 
-// ---------- Tasten je Modus (für das Legenden-Panel) ----------
+// ---------- Keys per mode (for the legend panel) ----------
 function cellsForMode() {
     const s = getSettings();
     if (s.mode === '3') {
@@ -498,7 +498,7 @@ function cellsForMode() {
     ];
 }
 
-// ---------- Legenden-Panel + Aufnahme-Liste (unten rechts) ----------
+// ---------- Legend panel + recording list (bottom right) ----------
 function updateBufferStatus() {
     const status = document.getElementById('md_buffer_status');
     if (status) {
@@ -519,7 +519,7 @@ function renderPanel() {
     if (!panel) {
         panel = document.createElement('div');
         panel.id = 'md_panel';
-        // Listener einmalig (Panel-Inhalt wird per innerHTML neu gebaut)
+        // attach listeners once (panel content is rebuilt via innerHTML)
         panel.addEventListener('click', onPanelClick);
         panel.addEventListener('keydown', onPanelKeydown);
         panel.addEventListener('focusout', onPanelFocusOut);
@@ -527,14 +527,14 @@ function renderPanel() {
     }
     panel.style.display = 'block';
 
-    // Tasten-Kästchen
+    // key cells
     const cells = cellsForMode().map(c => `
         <div class="md-cell ${c.kind === 'del' ? 'md-cell-del' : ''} ${activeSym && c.sym === activeSym ? 'md-cell-active' : ''}">
             <div class="md-cell-fn">${escapeHtml(c.sym)}</div>
             <div class="md-cell-key">${escapeHtml(shortKey(c.code))}</div>
         </div>`).join('');
 
-    // Aufnahme-Liste (editierbar)
+    // recording list (editable)
     let listHtml = '';
     if (buffer.length) {
         const rows = buffer.map((item, i) => {
@@ -558,7 +558,7 @@ function renderPanel() {
         ${listHtml}
         <div id="md_credits">${escapeHtml(CREDITS)}</div>`;
 
-    // Fokus zurück ins Edit-Feld + Cursor ans Ende
+    // restore focus to the edit field + cursor at the end
     if (editingIndex !== null) {
         const inp = panel.querySelector('.md-item-input');
         if (inp) {
@@ -570,7 +570,7 @@ function renderPanel() {
     updateBufferStatus();
 }
 
-// Klick im Panel: × löscht Zeile, Klick auf Zeile startet Bearbeitung
+// Click in the panel: x deletes a row, clicking a row starts editing
 function onPanelClick(e) {
     const delEl = e.target.closest('.md-item-del');
     if (delEl) {
@@ -583,7 +583,7 @@ function onPanelClick(e) {
     if (item) startEdit(parseInt(item.dataset.idx, 10));
 }
 
-// Enter speichert, Escape bricht ab
+// Enter saves, Escape cancels
 function onPanelKeydown(e) {
     if (!e.target.classList.contains('md-item-input')) return;
     e.stopPropagation();
@@ -591,7 +591,7 @@ function onPanelKeydown(e) {
     else if (e.key === 'Escape') { e.preventDefault(); editingIndex = null; renderPanel(); }
 }
 
-// Verlässt das Feld den Fokus -> speichern (außer es geht direkt in ein anderes Feld)
+// Field loses focus -> save (unless focus moves straight to another field)
 function onPanelFocusOut(e) {
     if (!e.target.classList.contains('md-item-input')) return;
     const next = e.relatedTarget;
@@ -599,16 +599,16 @@ function onPanelFocusOut(e) {
     if (editingIndex !== null) { commitEdit(); renderPanel(); }
 }
 
-// ---------- Hotkey-Listener ----------
+// ---------- Hotkey listener ----------
 function onKeyDown(e) {
     const s = getSettings();
     if (!s.enabled) return;
 
     const ae = document.activeElement;
-    // In fremden Eingabefeldern nicht auslösen (Chat-Eingabefeld ausgenommen).
+    // do not trigger inside other input fields (the chat input is exempt)
     const inOtherInput = ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA') && ae.id !== 'send_textarea';
     if (inOtherInput) return;
-    // Während eine Taste belegt oder eine Aufnahme bearbeitet wird, nicht auslösen.
+    // do not trigger while assigning a key or editing a recording
     if (ae && ae.classList && (ae.classList.contains('md-key-input') || ae.classList.contains('md-item-input'))) return;
 
     const code = e.code;
@@ -620,7 +620,7 @@ function onKeyDown(e) {
         else if (code === k.asteriskHold) { e.preventDefault(); triggerMode({ wrap: 'asterisk', send: false }); }
         else if (code === k.send) {
             e.preventDefault();
-            // Läuft gerade eine Aufnahme? Erst stoppen (Teil sichern), sonst Puffer senden.
+            // recording in progress? stop it first (keep the part), otherwise send the buffer
             if (isRecording) stopRecording();
             else flushBuffer({ send: true });
         }
@@ -634,7 +634,7 @@ function onKeyDown(e) {
     }
 }
 
-// ---------- Settings-UI ----------
+// ---------- Settings UI ----------
 function buildSettingsUI() {
     const html = `
     <div class="multi-dictation-settings">
@@ -747,14 +747,14 @@ function bindSettingsEvents() {
         renderPanel();
     });
 
-    // Menüsprache -> Panel komplett neu aufbauen (Labels übersetzen)
+    // menu language -> fully rebuild the panel (translate labels)
     $('#md_ui_lang').off('change').on('change', function () {
         getSettings().uiLanguage = $(this).val();
         saveSettingsDebounced();
         renderSettingsBody();
     });
 
-    // Modus -> Tastenfelder neu aufbauen
+    // mode -> rebuild the key fields
     $('#md_mode').off('change').on('change', function () {
         getSettings().mode = $(this).val();
         saveSettingsDebounced();
@@ -778,7 +778,7 @@ function bindSettingsEvents() {
         renderPanel();
     });
 
-    // Tasten per Tastendruck erfassen (ins Feld klicken, dann Taste drücken; Esc = leeren)
+    // capture keys by keypress (click the field, then press the key; Esc clears it)
     const bindKey = (id, setter) => {
         const el = document.getElementById(id);
         if (!el) return;
@@ -813,7 +813,7 @@ function bindSettingsEvents() {
     });
     $('#md_send_buffer').off('click').on('click', () => flushBuffer({ send: true }));
 
-    // Reset (Label immer Englisch)
+    // Reset (label always English)
     $('#md_reset').off('click').on('click', () => {
         if (!confirm('Reset all Multi-Mode Dictation settings to defaults?')) return;
         extensionSettings[MODULE_NAME] = structuredClone(defaultSettings);
@@ -831,5 +831,5 @@ jQuery(async () => {
     buildSettingsUI();
     document.addEventListener('keydown', onKeyDown, true);
     renderPanel();
-    console.log('[MultiDictation] geladen (v0.3)');
+    console.log('[MultiDictation] loaded (v0.3)');
 });
