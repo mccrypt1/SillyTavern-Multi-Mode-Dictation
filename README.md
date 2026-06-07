@@ -3,9 +3,11 @@
 Hotkeys for voice input with automatic formatting (asterisks / quotes) and a
 buffer that lets you combine several recordings into one message. Choose
 **4-key** or **3-key** operation, switch the menu language, and see a key
-overview in the bottom-right corner. The buffered recordings appear there as an
-**editable list** – click any row to fix its text, delete rows individually with
-×, and there is a freely assignable key to delete the last recording.
+overview in a **movable panel**. The key cells are **clickable with the mouse**,
+recording activation is switchable between **toggle** and **press-and-hold**, and
+the buffered recordings appear as an **editable list** – click any row to fix its
+text, delete rows individually with ×, and there is a freely assignable key to
+delete the last recording.
 
 *made by FragThief_1337*
 
@@ -64,11 +66,24 @@ All keys are freely assignable (click the field, press the desired key;
 
 ## Usage
 
-Recording = **press the same key twice**: once to start, once to stop.
-(Numpad0 → speak → Numpad0 again → it is transcribed and appended.)
+Recording activation is set in the settings under **Activation**:
+
+- **Toggle** (default): press the key once to start, press it again to stop.
+  (Numpad0 → speak → Numpad0 again → transcribed and appended.)
+- **Press and hold**: hold the key down while speaking, release to stop.
+
+You can also **click the key cells with the mouse** instead of using the
+keyboard. Mouse clicks are always toggle (click to start, click again to stop),
+regardless of the Activation setting.
 
 In 3-key mode the Send key first stops a recording that is still running; a
 second press then flushes the buffer.
+
+### Moving the panel
+
+Drag the grip (⠿) at the top of the panel to reposition it anywhere; the
+position is saved. **Double-click the grip** to reset it back to the
+bottom-right corner.
 
 ### Example (4-key): `0 2 1`
 1. **Numpad0** → "He looked at her shyly" → Numpad0 → buffer: `*He looked at her shyly*`
@@ -97,13 +112,16 @@ key below) and – as soon as something is collected – the recordings as a lis
   日本語, 中文. Affects only the UI – the Whisper recognition language is
   independent.
 - **Control mode**: 4-key or 3-key.
+- **Activation (keyboard)**: toggle (press again to stop) or press-and-hold.
 - **Delete key**: freely assignable key that deletes the last recording
   (available in both modes).
 - **Separator**: `...` by default – change it to anything.
 - **Whisper URL**: empty = auto-detect (`http://localhost:5100/…`). For a
   different port/host enter the full URL, e.g.
   `http://127.0.0.1:9000/api/speech-recognition/whisper/process-audio`.
-- **Show key overview**: toggles the bottom-right panel.
+- **Show key overview**: toggles the panel (cells + list).
+- **Panel position**: drag the grip (⠿) to move it; double-click the grip to
+  reset. The position is remembered.
 - **Clear buffer / Send buffer now**: manual controls.
 - **Reset to defaults**: resets all settings (this button is intentionally
   always labeled in English).

@@ -10,8 +10,10 @@
  *   3-key:           Quote+Buffer, Asterisk+Buffer, Send  (Numpad0-2)
  * Plus, per mode, a freely assignable key to delete the last recording.
  *
- * The buffered recordings are shown bottom-right as a list: each row is
- * clickable (edit the text) and individually deletable via x.
+ * The buffered recordings are shown in a movable panel (drag the grip): each
+ * row is clickable to edit and deletable via x. The key cells are also
+ * clickable with the mouse. Recording activation is switchable between
+ * toggle (press/click again to stop) and press-and-hold (keyboard).
  *
  * made by FragThief_1337
  */
@@ -37,10 +39,13 @@ const I18N = {
     de: {
         enabled: 'Aktiviert',
         uiLang: 'Menüsprache',
-        sttHint: 'Nutzt den lokalen Whisper-STT-Server. Aufnahme starten/stoppen = gleiche Taste drücken.',
+        sttHint: 'Nutzt den lokalen Whisper-STT-Server. Tasten-Kästchen sind auch per Maus klickbar.',
         mode: 'Bedienmodus',
         mode4: '4-Knopf (Asterisk/Quote × Puffer/Senden)',
         mode3: '3-Knopf (Quote, Asterisk, Senden)',
+        activation: 'Aktivierung (Tastatur)',
+        act_toggle: 'Umschalten (erneut drücken/klicken stoppt)',
+        act_hold: 'Gedrückt halten',
         k_asteriskHold: 'Asterisk – anhängen (warten)',
         k_asteriskSend: 'Asterisk – anhängen + senden',
         k_quoteHold: 'Quote – anhängen (warten)',
@@ -54,7 +59,8 @@ const I18N = {
         showLegend: 'Tasten-Übersicht anzeigen',
         bufferEmpty: 'Puffer: leer',
         bufferLabel: 'Puffer',
-        t_recording: 'Aufnahme läuft (%s)… Taste erneut drücken zum Stoppen',
+        gripHint: 'Ziehen zum Verschieben • Doppelklick = zurücksetzen',
+        t_recording: 'Aufnahme läuft (%s)…',
         t_transcribing: 'Transkribiere…',
         t_micError: 'Mikrofon nicht verfügbar',
         t_failed: 'Transkription fehlgeschlagen – läuft der STT-Server?',
@@ -63,10 +69,13 @@ const I18N = {
     en: {
         enabled: 'Enabled',
         uiLang: 'Menu language',
-        sttHint: 'Uses the local Whisper STT server. Start/stop recording = press the same key.',
+        sttHint: 'Uses the local Whisper STT server. The key cells are also clickable with the mouse.',
         mode: 'Control mode',
         mode4: '4-key (Asterisk/Quote × Buffer/Send)',
         mode3: '3-key (Quote, Asterisk, Send)',
+        activation: 'Activation (keyboard)',
+        act_toggle: 'Toggle (press/click again to stop)',
+        act_hold: 'Press and hold',
         k_asteriskHold: 'Asterisk – append (wait)',
         k_asteriskSend: 'Asterisk – append + send',
         k_quoteHold: 'Quote – append (wait)',
@@ -80,7 +89,8 @@ const I18N = {
         showLegend: 'Show key overview',
         bufferEmpty: 'Buffer: empty',
         bufferLabel: 'Buffer',
-        t_recording: 'Recording (%s)… press the key again to stop',
+        gripHint: 'Drag to move • double-click to reset',
+        t_recording: 'Recording (%s)…',
         t_transcribing: 'Transcribing…',
         t_micError: 'Microphone unavailable',
         t_failed: 'Transcription failed – is the STT server running?',
@@ -89,10 +99,13 @@ const I18N = {
     fr: {
         enabled: 'Activé',
         uiLang: 'Langue du menu',
-        sttHint: 'Utilise le serveur STT Whisper local. Démarrer/arrêter l’enregistrement = appuyer sur la même touche.',
+        sttHint: 'Utilise le serveur STT Whisper local. Les cases de touches sont aussi cliquables à la souris.',
         mode: 'Mode de commande',
         mode4: '4 touches (Astérisque/Guillemets × Tampon/Envoi)',
         mode3: '3 touches (Guillemets, Astérisque, Envoi)',
+        activation: 'Activation (clavier)',
+        act_toggle: 'Bascule (rappuyer/recliquer pour arrêter)',
+        act_hold: 'Maintenir enfoncé',
         k_asteriskHold: 'Astérisque – ajouter (attendre)',
         k_asteriskSend: 'Astérisque – ajouter + envoyer',
         k_quoteHold: 'Guillemets – ajouter (attendre)',
@@ -106,7 +119,8 @@ const I18N = {
         showLegend: 'Afficher l’aperçu des touches',
         bufferEmpty: 'Tampon : vide',
         bufferLabel: 'Tampon',
-        t_recording: 'Enregistrement (%s)… appuyez à nouveau pour arrêter',
+        gripHint: 'Glisser pour déplacer • double-clic pour réinitialiser',
+        t_recording: 'Enregistrement (%s)…',
         t_transcribing: 'Transcription…',
         t_micError: 'Microphone indisponible',
         t_failed: 'Échec de la transcription – le serveur STT est-il lancé ?',
@@ -115,10 +129,13 @@ const I18N = {
     es: {
         enabled: 'Activado',
         uiLang: 'Idioma del menú',
-        sttHint: 'Usa el servidor STT Whisper local. Iniciar/detener grabación = pulsa la misma tecla.',
+        sttHint: 'Usa el servidor STT Whisper local. Las casillas de teclas también se pueden pulsar con el ratón.',
         mode: 'Modo de control',
         mode4: '4 teclas (Asterisco/Comillas × Búfer/Enviar)',
         mode3: '3 teclas (Comillas, Asterisco, Enviar)',
+        activation: 'Activación (teclado)',
+        act_toggle: 'Alternar (pulsar/clic de nuevo para parar)',
+        act_hold: 'Mantener pulsado',
         k_asteriskHold: 'Asterisco – añadir (esperar)',
         k_asteriskSend: 'Asterisco – añadir + enviar',
         k_quoteHold: 'Comillas – añadir (esperar)',
@@ -132,7 +149,8 @@ const I18N = {
         showLegend: 'Mostrar resumen de teclas',
         bufferEmpty: 'Búfer: vacío',
         bufferLabel: 'Búfer',
-        t_recording: 'Grabando (%s)… pulsa la tecla de nuevo para detener',
+        gripHint: 'Arrastrar para mover • doble clic para restablecer',
+        t_recording: 'Grabando (%s)…',
         t_transcribing: 'Transcribiendo…',
         t_micError: 'Micrófono no disponible',
         t_failed: 'Transcripción fallida: ¿está el servidor STT en marcha?',
@@ -141,10 +159,13 @@ const I18N = {
     ru: {
         enabled: 'Включено',
         uiLang: 'Язык меню',
-        sttHint: 'Использует локальный STT-сервер Whisper. Старт/стоп записи = нажмите ту же клавишу.',
+        sttHint: 'Использует локальный STT-сервер Whisper. По клеткам клавиш можно также щёлкать мышью.',
         mode: 'Режим управления',
         mode4: '4 клавиши (Звёздочки/Кавычки × Буфер/Отправка)',
         mode3: '3 клавиши (Кавычки, Звёздочки, Отправка)',
+        activation: 'Активация (клавиатура)',
+        act_toggle: 'Переключение (нажмите/щёлкните снова)',
+        act_hold: 'Удерживать нажатой',
         k_asteriskHold: 'Звёздочки – добавить (ждать)',
         k_asteriskSend: 'Звёздочки – добавить + отправить',
         k_quoteHold: 'Кавычки – добавить (ждать)',
@@ -158,7 +179,8 @@ const I18N = {
         showLegend: 'Показать обзор клавиш',
         bufferEmpty: 'Буфер: пусто',
         bufferLabel: 'Буфер',
-        t_recording: 'Идёт запись (%s)… нажмите клавишу снова для остановки',
+        gripHint: 'Перетащите, чтобы переместить • двойной щелчок — сброс',
+        t_recording: 'Идёт запись (%s)…',
         t_transcribing: 'Транскрибирование…',
         t_micError: 'Микрофон недоступен',
         t_failed: 'Ошибка транскрипции – запущен ли STT-сервер?',
@@ -167,10 +189,13 @@ const I18N = {
     ja: {
         enabled: '有効',
         uiLang: 'メニュー言語',
-        sttHint: 'ローカルの Whisper STT サーバーを使用します。録音の開始/停止 = 同じキーを押す。',
+        sttHint: 'ローカルの Whisper STT サーバーを使用します。キーのマスはマウスでもクリックできます。',
         mode: '操作モード',
         mode4: '4キー（アスタリスク/引用符 × バッファ/送信）',
         mode3: '3キー（引用符、アスタリスク、送信）',
+        activation: '起動方式（キーボード）',
+        act_toggle: 'トグル（もう一度押す/クリックで停止）',
+        act_hold: '押し続ける',
         k_asteriskHold: 'アスタリスク – 追加（待機）',
         k_asteriskSend: 'アスタリスク – 追加＋送信',
         k_quoteHold: '引用符 – 追加（待機）',
@@ -184,7 +209,8 @@ const I18N = {
         showLegend: 'キー一覧を表示',
         bufferEmpty: 'バッファ：空',
         bufferLabel: 'バッファ',
-        t_recording: '録音中 (%s)… もう一度キーを押して停止',
+        gripHint: 'ドラッグで移動 • ダブルクリックでリセット',
+        t_recording: '録音中 (%s)…',
         t_transcribing: '文字起こし中…',
         t_micError: 'マイクを使用できません',
         t_failed: '文字起こしに失敗 – STT サーバーは起動していますか？',
@@ -193,10 +219,13 @@ const I18N = {
     zh: {
         enabled: '启用',
         uiLang: '菜单语言',
-        sttHint: '使用本地 Whisper STT 服务器。开始/停止录音 = 按同一个键。',
+        sttHint: '使用本地 Whisper STT 服务器。按键方块也可以用鼠标点击。',
         mode: '控制模式',
         mode4: '4 键（星号/引号 × 缓冲/发送）',
         mode3: '3 键（引号、星号、发送）',
+        activation: '激活方式（键盘）',
+        act_toggle: '切换（再次按下/点击停止）',
+        act_hold: '按住不放',
         k_asteriskHold: '星号 – 追加（等待）',
         k_asteriskSend: '星号 – 追加 + 发送',
         k_quoteHold: '引号 – 追加（等待）',
@@ -210,7 +239,8 @@ const I18N = {
         showLegend: '显示按键概览',
         bufferEmpty: '缓冲：空',
         bufferLabel: '缓冲',
-        t_recording: '正在录音 (%s)… 再次按键停止',
+        gripHint: '拖动以移动 • 双击重置',
+        t_recording: '正在录音 (%s)…',
         t_transcribing: '转录中…',
         t_micError: '麦克风不可用',
         t_failed: '转录失败 – STT 服务器在运行吗？',
@@ -221,19 +251,21 @@ const I18N = {
 // ---------- Default settings ----------
 const defaultSettings = {
     enabled: true,
-    uiLanguage: 'en',   // menu language (English by default; independent of the STT language)
-    language: 'de',     // Whisper recognition language
-    mode: '4',          // '4' = 4-key, '3' = 3-key
+    uiLanguage: 'en',     // menu language (English by default; independent of the STT language)
+    language: 'de',       // Whisper recognition language
+    mode: '4',            // '4' = 4-key, '3' = 3-key
+    activation: 'toggle', // 'toggle' or 'hold' (keyboard recording keys)
     separator: '...',
     showLegend: true,
-    keys: {             // 4-key mode
+    panelPos: null,       // null = default bottom-right, else { left, top } in px
+    keys: {               // 4-key mode
         asteriskHold: 'Numpad0',
         asteriskSend: 'Numpad1',
         quoteHold: 'Numpad2',
         quoteSend: 'Numpad3',
         deleteLast: 'NumpadDecimal',
     },
-    keys3: {            // 3-key mode
+    keys3: {              // 3-key mode
         quoteHold: 'Numpad0',     // key 1: Quote + buffer
         asteriskHold: 'Numpad1',  // key 2: Asterisk + buffer
         send: 'Numpad2',          // key 3: Send
@@ -283,7 +315,10 @@ let mediaRecorder = null;
 let audioChunks = [];
 let activeMode = null;    // {wrap:'asterisk'|'quote', send:boolean}
 let activeSym = null;     // symbol of the currently recording key (for highlight)
+let activeCode = null;    // keyboard code that started a hold recording
 let editingIndex = null;  // index of the recording being edited (or null)
+let dragging = false;     // panel is being dragged
+let dragOffset = { x: 0, y: 0 };
 
 // ---------- Symbols / key names ----------
 function symFor(mode) {
@@ -397,6 +432,7 @@ async function startRecording(mode) {
     } catch (err) {
         isRecording = false;
         activeSym = null;
+        activeCode = null;
         renderPanel();
         console.error('[MultiDictation] Microphone error:', err);
         toastr.error(t('t_micError'), 'Multi-Dictation');
@@ -429,11 +465,12 @@ async function handleTranscription(blob) {
         isRecording = false;
         activeMode = null;
         activeSym = null;
+        activeCode = null;
         renderPanel();
     }
 }
 
-// Toggle: the same key starts/stops
+// Toggle: the same key/cell starts/stops
 function triggerMode(mode) {
     if (isRecording) {
         stopRecording();
@@ -483,26 +520,54 @@ function cellsForMode() {
     const s = getSettings();
     if (s.mode === '3') {
         return [
-            { sym: symFor({ wrap: 'quote', send: false }), code: s.keys3.quoteHold },
-            { sym: symFor({ wrap: 'asterisk', send: false }), code: s.keys3.asteriskHold },
-            { sym: '→', code: s.keys3.send },
-            { sym: '⌫', code: s.keys3.deleteLast, kind: 'del' },
+            { sym: symFor({ wrap: 'quote', send: false }), code: s.keys3.quoteHold, act: { type: 'rec', wrap: 'quote', send: false } },
+            { sym: symFor({ wrap: 'asterisk', send: false }), code: s.keys3.asteriskHold, act: { type: 'rec', wrap: 'asterisk', send: false } },
+            { sym: '→', code: s.keys3.send, act: { type: 'send' } },
+            { sym: '⌫', code: s.keys3.deleteLast, kind: 'del', act: { type: 'del' } },
         ];
     }
     return [
-        { sym: symFor({ wrap: 'asterisk', send: false }), code: s.keys.asteriskHold },
-        { sym: symFor({ wrap: 'asterisk', send: true }), code: s.keys.asteriskSend },
-        { sym: symFor({ wrap: 'quote', send: false }), code: s.keys.quoteHold },
-        { sym: symFor({ wrap: 'quote', send: true }), code: s.keys.quoteSend },
-        { sym: '⌫', code: s.keys.deleteLast, kind: 'del' },
+        { sym: symFor({ wrap: 'asterisk', send: false }), code: s.keys.asteriskHold, act: { type: 'rec', wrap: 'asterisk', send: false } },
+        { sym: symFor({ wrap: 'asterisk', send: true }), code: s.keys.asteriskSend, act: { type: 'rec', wrap: 'asterisk', send: true } },
+        { sym: symFor({ wrap: 'quote', send: false }), code: s.keys.quoteHold, act: { type: 'rec', wrap: 'quote', send: false } },
+        { sym: symFor({ wrap: 'quote', send: true }), code: s.keys.quoteSend, act: { type: 'rec', wrap: 'quote', send: true } },
+        { sym: '⌫', code: s.keys.deleteLast, kind: 'del', act: { type: 'del' } },
     ];
 }
 
-// ---------- Legend panel + recording list (bottom right) ----------
+// One action (keyboard or mouse). Mouse is always click-toggle.
+function doAction(act) {
+    if (!act) return;
+    if (act.type === 'rec') triggerMode({ wrap: act.wrap, send: act.send });
+    else if (act.type === 'send') { if (isRecording) stopRecording(); else flushBuffer({ send: true }); }
+    else if (act.type === 'del') deleteLastItem();
+}
+
+// ---------- Legend panel + recording list (movable) ----------
 function updateBufferStatus() {
     const status = document.getElementById('md_buffer_status');
     if (status) {
         status.textContent = buffer.length ? `${t('bufferLabel')} (${buffer.length})` : t('bufferEmpty');
+    }
+}
+
+function applyPanelPos(panel) {
+    if (dragging) return;
+    const s = getSettings();
+    if (s.panelPos && typeof s.panelPos.left === 'number' && typeof s.panelPos.top === 'number') {
+        const w = panel.offsetWidth || 200;
+        const h = panel.offsetHeight || 80;
+        const left = Math.max(0, Math.min(s.panelPos.left, window.innerWidth - w));
+        const top = Math.max(0, Math.min(s.panelPos.top, window.innerHeight - h));
+        panel.style.left = left + 'px';
+        panel.style.top = top + 'px';
+        panel.style.right = 'auto';
+        panel.style.bottom = 'auto';
+    } else {
+        panel.style.left = '';
+        panel.style.top = '';
+        panel.style.right = '';
+        panel.style.bottom = '';
     }
 }
 
@@ -523,13 +588,15 @@ function renderPanel() {
         panel.addEventListener('click', onPanelClick);
         panel.addEventListener('keydown', onPanelKeydown);
         panel.addEventListener('focusout', onPanelFocusOut);
+        panel.addEventListener('mousedown', onPanelMouseDown);
+        panel.addEventListener('dblclick', onPanelDblClick);
         document.body.appendChild(panel);
     }
     panel.style.display = 'block';
 
-    // key cells
-    const cells = cellsForMode().map(c => `
-        <div class="md-cell ${c.kind === 'del' ? 'md-cell-del' : ''} ${activeSym && c.sym === activeSym ? 'md-cell-active' : ''}">
+    // key cells (clickable)
+    const cells = cellsForMode().map((c, i) => `
+        <div class="md-cell ${c.kind === 'del' ? 'md-cell-del' : ''} ${activeSym && c.sym === activeSym ? 'md-cell-active' : ''}" data-cell="${i}" title="${escapeAttr(shortKey(c.code))}">
             <div class="md-cell-fn">${escapeHtml(c.sym)}</div>
             <div class="md-cell-key">${escapeHtml(shortKey(c.code))}</div>
         </div>`).join('');
@@ -554,6 +621,7 @@ function renderPanel() {
     }
 
     panel.innerHTML = `
+        <div id="md_grip" title="${escapeAttr(t('gripHint'))}">⠿</div>
         <div id="md_cells">${cells}</div>
         ${listHtml}
         <div id="md_credits">${escapeHtml(CREDITS)}</div>`;
@@ -567,15 +635,23 @@ function renderPanel() {
         }
     }
 
+    applyPanelPos(panel);
     updateBufferStatus();
 }
 
-// Click in the panel: x deletes a row, clicking a row starts editing
+// Click in the panel: cell triggers its action, x deletes a row, row click edits
 function onPanelClick(e) {
+    if (e.target.closest('#md_grip')) return;
     const delEl = e.target.closest('.md-item-del');
     if (delEl) {
         e.stopPropagation();
         deleteItem(parseInt(delEl.dataset.del, 10));
+        return;
+    }
+    const cell = e.target.closest('.md-cell');
+    if (cell && cell.dataset.cell !== undefined) {
+        const c = cellsForMode()[parseInt(cell.dataset.cell, 10)];
+        doAction(c && c.act);
         return;
     }
     if (e.target.classList.contains('md-item-input')) return;
@@ -583,7 +659,7 @@ function onPanelClick(e) {
     if (item) startEdit(parseInt(item.dataset.idx, 10));
 }
 
-// Enter saves, Escape cancels
+// Enter saves, Escape cancels (edit field)
 function onPanelKeydown(e) {
     if (!e.target.classList.contains('md-item-input')) return;
     e.stopPropagation();
@@ -599,7 +675,71 @@ function onPanelFocusOut(e) {
     if (editingIndex !== null) { commitEdit(); renderPanel(); }
 }
 
-// ---------- Hotkey listener ----------
+// ---------- Dragging the panel (via the grip) ----------
+function onPanelMouseDown(e) {
+    if (!e.target.closest('#md_grip')) return;
+    e.preventDefault();
+    const panel = document.getElementById('md_panel');
+    const rect = panel.getBoundingClientRect();
+    dragOffset = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    dragging = true;
+    document.addEventListener('mousemove', onDragMove, true);
+    document.addEventListener('mouseup', onDragEnd, true);
+}
+
+function onDragMove(e) {
+    if (!dragging) return;
+    const panel = document.getElementById('md_panel');
+    if (!panel) return;
+    const w = panel.offsetWidth;
+    const h = panel.offsetHeight;
+    let left = Math.max(0, Math.min(e.clientX - dragOffset.x, window.innerWidth - w));
+    let top = Math.max(0, Math.min(e.clientY - dragOffset.y, window.innerHeight - h));
+    panel.style.left = left + 'px';
+    panel.style.top = top + 'px';
+    panel.style.right = 'auto';
+    panel.style.bottom = 'auto';
+}
+
+function onDragEnd() {
+    if (!dragging) return;
+    dragging = false;
+    document.removeEventListener('mousemove', onDragMove, true);
+    document.removeEventListener('mouseup', onDragEnd, true);
+    const panel = document.getElementById('md_panel');
+    if (!panel) return;
+    getSettings().panelPos = { left: parseInt(panel.style.left, 10), top: parseInt(panel.style.top, 10) };
+    saveSettingsDebounced();
+}
+
+// Double-click the grip -> reset position to default
+function onPanelDblClick(e) {
+    if (!e.target.closest('#md_grip')) return;
+    getSettings().panelPos = null;
+    saveSettingsDebounced();
+    renderPanel();
+}
+
+// ---------- Hotkey listeners ----------
+function actionForCode(code, s) {
+    if (!code) return null;
+    if (s.mode === '3') {
+        const k = s.keys3;
+        if (k.deleteLast && code === k.deleteLast) return { type: 'del' };
+        if (code === k.quoteHold) return { type: 'rec', wrap: 'quote', send: false };
+        if (code === k.asteriskHold) return { type: 'rec', wrap: 'asterisk', send: false };
+        if (code === k.send) return { type: 'send' };
+    } else {
+        const k = s.keys;
+        if (k.deleteLast && code === k.deleteLast) return { type: 'del' };
+        if (code === k.asteriskHold) return { type: 'rec', wrap: 'asterisk', send: false };
+        if (code === k.asteriskSend) return { type: 'rec', wrap: 'asterisk', send: true };
+        if (code === k.quoteHold) return { type: 'rec', wrap: 'quote', send: false };
+        if (code === k.quoteSend) return { type: 'rec', wrap: 'quote', send: true };
+    }
+    return null;
+}
+
 function onKeyDown(e) {
     const s = getSettings();
     if (!s.enabled) return;
@@ -611,26 +751,34 @@ function onKeyDown(e) {
     // do not trigger while assigning a key or editing a recording
     if (ae && ae.classList && (ae.classList.contains('md-key-input') || ae.classList.contains('md-item-input'))) return;
 
-    const code = e.code;
+    const act = actionForCode(e.code, s);
+    if (!act) return;
+    e.preventDefault();
 
-    if (s.mode === '3') {
-        const k = s.keys3;
-        if (k.deleteLast && code === k.deleteLast) { e.preventDefault(); deleteLastItem(); }
-        else if (code === k.quoteHold) { e.preventDefault(); triggerMode({ wrap: 'quote', send: false }); }
-        else if (code === k.asteriskHold) { e.preventDefault(); triggerMode({ wrap: 'asterisk', send: false }); }
-        else if (code === k.send) {
-            e.preventDefault();
-            // recording in progress? stop it first (keep the part), otherwise send the buffer
-            if (isRecording) stopRecording();
-            else flushBuffer({ send: true });
+    if (act.type === 'del') { deleteLastItem(); return; }
+    if (act.type === 'send') {
+        if (isRecording) stopRecording();
+        else flushBuffer({ send: true });
+        return;
+    }
+    // act.type === 'rec'
+    if (s.activation === 'hold') {
+        if (e.repeat) return;            // ignore auto-repeat while held
+        if (!isRecording) {
+            activeCode = e.code;
+            startRecording({ wrap: act.wrap, send: act.send });
         }
     } else {
-        const k = s.keys;
-        if (k.deleteLast && code === k.deleteLast) { e.preventDefault(); deleteLastItem(); }
-        else if (code === k.asteriskHold) { e.preventDefault(); triggerMode({ wrap: 'asterisk', send: false }); }
-        else if (code === k.asteriskSend) { e.preventDefault(); triggerMode({ wrap: 'asterisk', send: true }); }
-        else if (code === k.quoteHold) { e.preventDefault(); triggerMode({ wrap: 'quote', send: false }); }
-        else if (code === k.quoteSend) { e.preventDefault(); triggerMode({ wrap: 'quote', send: true }); }
+        triggerMode({ wrap: act.wrap, send: act.send });
+    }
+}
+
+function onKeyUp(e) {
+    const s = getSettings();
+    if (!s.enabled || s.activation !== 'hold') return;
+    if (e.code === activeCode && isRecording) {
+        activeCode = null;
+        stopRecording();
     }
 }
 
@@ -661,6 +809,10 @@ function renderSettingsBody() {
     const modeOptions = `
         <option value="4" ${s.mode === '4' ? 'selected' : ''}>${escapeHtml(t('mode4'))}</option>
         <option value="3" ${s.mode === '3' ? 'selected' : ''}>${escapeHtml(t('mode3'))}</option>`;
+
+    const activationOptions = `
+        <option value="toggle" ${s.activation === 'toggle' ? 'selected' : ''}>${escapeHtml(t('act_toggle'))}</option>
+        <option value="hold" ${s.activation === 'hold' ? 'selected' : ''}>${escapeHtml(t('act_hold'))}</option>`;
 
     let keyFields;
     if (s.mode === '3') {
@@ -706,6 +858,9 @@ function renderSettingsBody() {
 
         <label>${escapeHtml(t('mode'))}</label>
         <select id="md_mode" class="text_pole">${modeOptions}</select>
+
+        <label>${escapeHtml(t('activation'))}</label>
+        <select id="md_activation" class="text_pole">${activationOptions}</select>
 
         <hr>
         ${keyFields}
@@ -759,6 +914,11 @@ function bindSettingsEvents() {
         getSettings().mode = $(this).val();
         saveSettingsDebounced();
         renderSettingsBody();
+    });
+
+    $('#md_activation').off('change').on('change', function () {
+        getSettings().activation = $(this).val();
+        saveSettingsDebounced();
     });
 
     $('#md_separator').off('input change').on('input change', function () {
@@ -830,6 +990,7 @@ jQuery(async () => {
     getSettings();
     buildSettingsUI();
     document.addEventListener('keydown', onKeyDown, true);
+    document.addEventListener('keyup', onKeyUp, true);
     renderPanel();
-    console.log('[MultiDictation] loaded (v0.3)');
+    console.log('[MultiDictation] loaded (v0.4)');
 });

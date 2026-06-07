@@ -1,4 +1,4 @@
-/* ---------- Legend panel (bottom right) ---------- */
+/* ---------- Legend panel (movable) ---------- */
 #md_panel {
     position: fixed;
     bottom: 20px;
@@ -6,13 +6,28 @@
     max-width: 360px;
     background: rgba(0, 0, 0, 0.82);
     color: #fff;
-    padding: 8px 10px;
+    padding: 6px 10px 8px;
     border-radius: 10px;
     font-size: 0.8em;
     z-index: 9999;
-    pointer-events: none; /* only the list captures clicks */
+    pointer-events: none; /* only interactive children capture clicks */
     border: 1px solid rgba(255, 255, 255, 0.2);
     display: none;
+}
+
+/* drag handle */
+#md_grip {
+    pointer-events: auto;
+    cursor: move;
+    text-align: center;
+    font-size: 1em;
+    letter-spacing: 2px;
+    opacity: 0.45;
+    margin-bottom: 4px;
+    user-select: none;
+}
+#md_grip:hover {
+    opacity: 0.9;
 }
 
 #md_cells {
@@ -31,6 +46,13 @@
     background: rgba(255, 255, 255, 0.08);
     border: 1px solid rgba(255, 255, 255, 0.25);
     border-radius: 6px;
+    pointer-events: auto; /* clickable with the mouse */
+    cursor: pointer;
+    user-select: none;
+}
+
+.md-cell:hover {
+    background: rgba(255, 255, 255, 0.18);
 }
 
 .md-cell-fn {
@@ -55,6 +77,9 @@
 .md-cell-del {
     background: rgba(255, 90, 90, 0.14);
     border-color: rgba(255, 120, 120, 0.45);
+}
+.md-cell-del:hover {
+    background: rgba(255, 90, 90, 0.3);
 }
 
 /* ---------- Recording list (editable) ---------- */
