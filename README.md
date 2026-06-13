@@ -1,139 +1,60 @@
 # Multi-Mode Dictation – SillyTavern Extension
 
-Hotkeys for voice input with automatic formatting (asterisks / quotes) and a
-buffer that lets you combine several recordings into one message. Choose
-**4-key** or **3-key** operation, switch the menu language, and see a key
-overview in a **movable panel**. The key cells are **clickable with the mouse**,
-recording activation is switchable between **toggle** and **press-and-hold**, and
-the buffered recordings appear as an **editable list** – click any row to fix its
-text, delete rows individually with ×, and there is a freely assignable key to
-delete the last recording.
+Talk into SillyTavern. Numpad hotkeys record your voice, a local Whisper server
+transcribes it, and the text is auto-formatted (asterisks / quotes) and
+collected in an **editable buffer** before sending.
+
+![G1](docs/gif/G1-hero.gif)
+_Record ▸ speak ▸ the text appears in the list ▸ send._
 
 *made by FragThief_1337*
 
+## Features
+
+- **4-key or 3-key** operation; every key freely assignable.
+- **Activation: toggle or press-and-hold** (keyboard); key cells are also
+  **clickable with the mouse**.
+- **Editable buffer list** — click a recording to fix its text, delete rows with
+  ×, or drop the last one with a key.
+- **Movable on-screen panel** (drag the grip) showing the key legend + buffer.
+- **Multilingual menu** (EN/DE/FR/ES/RU/JA/ZH); recognition language is separate.
+- 100% local — uses a small **Whisper STT server** that ships in this repo
+  (`STT_Server/`). No cloud, no API key.
+
+## Quick start
+
+You need two things: the **STT server** and the **extension**.
+
+1. **STT server:** open `STT_Server/`, double-click `start.bat`, wait until it
+   says *listening on http://127.0.0.1:9000*.
+2. **Extension:** in SillyTavern ▸ **Extensions ▸ Install extension**, paste:
+   ```
+   https://github.com/mccrypt1/SillyTavern-Multi-Mode-Dictation
+   ```
+   Then open **Extensions ▸ Multi-Mode Dictation** and set the **Whisper URL** to
+   `http://127.0.0.1:9000/api/speech-recognition/whisper/process-audio`.
+
+📖 **Full step-by-step guide with screenshots: [docs/SETUP.md](docs/SETUP.md)**
+
+## Default keys
+
+| Key       | 4-key mode              | 3-key mode            |
+|-----------|-------------------------|-----------------------|
+| Numpad0   | `*+` asterisk, buffer   | `"+` quote, buffer    |
+| Numpad1   | `*→` asterisk, send     | `*+` asterisk, buffer |
+| Numpad2   | `"+` quote, buffer      | `→` send              |
+| Numpad3   | `"→` quote, send        | —                     |
+| Numpad .  | `⌫` delete last         | `⌫` delete last       |
+
+`+` = append to buffer, `→` = send, `⌫` = delete last. All remappable in the
+settings (press a key in the field; **Esc** clears it).
+
 ## Requirements
 
-- SillyTavern (tested with 1.13.x – 1.17.x).
-- A running local **Whisper STT server** with an endpoint at
-  `…/api/speech-recognition/whisper/process-audio` that accepts an audio upload
-  and returns `{ "transcript": "…" }` (or `{ "text": "…" }`). This is compatible
-  with ST-Extras (the `speech-recognition` module) and with custom
-  faster-whisper servers.
-- Microphone access allowed in the browser.
-
-## Installation
-
-### Option A – via the ST UI (recommended)
-1. Copy the `multi-dictation` folder into
-   `SillyTavern/public/scripts/extensions/third-party/`
-   (or run `install.bat` – adjust the path at the top of the file if needed).
-2. Reload SillyTavern in the browser (F5).
-3. Open **Extensions (plug icon) → Multi-Mode Dictation**.
-
-### Option B – via Git URL
-In ST, use **Install Extension** with this URL (once the repo is public):
-
-```
-https://github.com/mccrypt1/SillyTavern-Multi-Mode-Dictation
-```
-
-(`manifest.json` is in the repo root.)
-
-## Control modes
-
-Switchable in the settings under **Control mode**.
-
-### 4-key (default)
-| Key       | Function | Symbol | Behavior                            |
-|-----------|----------|--------|-------------------------------------|
-| Numpad0   | Asterisk | `*+`   | append to buffer (wait)             |
-| Numpad1   | Asterisk | `*→`   | append to buffer + send             |
-| Numpad2   | Quote    | `"+`   | append to buffer (wait)             |
-| Numpad3   | Quote    | `"→`   | append to buffer + send             |
-| Numpad .  | Delete   | `⌫`    | delete the last recording from buffer |
-
-### 3-key
-| Key       | Function | Symbol | Behavior                            |
-|-----------|----------|--------|-------------------------------------|
-| Numpad0   | Quote    | `"+`   | append to buffer (wait)             |
-| Numpad1   | Asterisk | `*+`   | append to buffer (wait)             |
-| Numpad2   | Send     | `→`    | flush the buffer                    |
-| Numpad .  | Delete   | `⌫`    | delete the last recording from buffer |
-
-All keys are freely assignable (click the field, press the desired key;
-**Esc** in the field clears the assignment). `+` = append to buffer,
-`→` = send, `⌫` = delete last recording.
-
-## Usage
-
-Recording activation is set in the settings under **Activation**:
-
-- **Toggle** (default): press the key once to start, press it again to stop.
-  (Numpad0 → speak → Numpad0 again → transcribed and appended.)
-- **Press and hold**: hold the key down while speaking, release to stop.
-
-You can also **click the key cells with the mouse** instead of using the
-keyboard. Mouse clicks are always toggle (click to start, click again to stop),
-regardless of the Activation setting.
-
-In 3-key mode the Send key first stops a recording that is still running; a
-second press then flushes the buffer.
-
-### Moving the panel
-
-Drag the grip (⠿) at the top of the panel to reposition it anywhere; the
-position is saved. **Double-click the grip** to reset it back to the
-bottom-right corner.
-
-### Example (4-key): `0 2 1`
-1. **Numpad0** → "He looked at her shyly" → Numpad0 → buffer: `*He looked at her shyly*`
-2. **Numpad2** → "come into my arms" → Numpad2 → `…"come into my arms"`
-3. **Numpad1** → "it felt good" → Numpad1 → appends and **sends**:
-
-```
-*He looked at her shyly*..."come into my arms"...*it felt good*
-```
-
-The panel in the bottom-right shows the key bindings as cells (function on top,
-key below) and – as soon as something is collected – the recordings as a list.
-
-### Editing & deleting recordings
-
-- **Edit:** click a row in the list → you edit only the spoken text (the `*`/`"`
-  wrapping is kept automatically). **Enter** saves, **Esc** cancels. Then keep
-  recording as usual.
-- **Delete one:** the **×** on the right of a row removes exactly that recording.
-- **Delete last:** the assigned delete key (default `Numpad .`) drops the last
-  recording from the buffer – with no visible button.
-
-## Settings
-
-- **Menu language**: English (default), Deutsch, Français, Español, Русский,
-  日本語, 中文. Affects only the UI – the Whisper recognition language is
-  independent.
-- **Control mode**: 4-key or 3-key.
-- **Activation (keyboard)**: toggle (press again to stop) or press-and-hold.
-- **Delete key**: freely assignable key that deletes the last recording
-  (available in both modes).
-- **Separator**: `...` by default – change it to anything.
-- **Whisper URL**: empty = auto-detect (`http://localhost:5100/…`). For a
-  different port/host enter the full URL, e.g.
-  `http://127.0.0.1:9000/api/speech-recognition/whisper/process-audio`.
-- **Show key overview**: toggles the panel (cells + list).
-- **Panel position**: drag the grip (⠿) to move it; double-click the grip to
-  reset. The position is remembered.
-- **Clear buffer / Send buffer now**: manual controls.
-- **Reset to defaults**: resets all settings (this button is intentionally
-  always labeled in English).
-
-## Troubleshooting
-
-- **"Transcription failed"**: the STT server is not running or the URL is wrong.
-- The hotkeys fire globally, **except** while you are typing in a *different*
-  text field.
-- If a built-in ST Speech Recognition binding collides (e.g. Numpad0), clear it
-  in the ST menu.
+- SillyTavern (tested 1.13.x – 1.17.x).
+- Python 3.10+ for the bundled STT server (faster-whisper, CPU).
+- Microphone access in the browser.
 
 ## License
 
-MIT – see [LICENSE](LICENSE).
+MIT – see [LICENSE](LICENSE). Repo: <https://github.com/mccrypt1/SillyTavern-Multi-Mode-Dictation>

@@ -11,3 +11,13 @@ desktop.ini
 
 # Archives
 *.zip
+
+# Python (STT_Server)
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# STT model files & logs (downloaded / generated locally, not committed)
+STT_Server/models/
+STT_Server/logs/
